@@ -12,6 +12,8 @@ Helps managing and updating [GE-Proton versions](https://github.com/GloriousEggr
 
 ## Installation
 ```
+wget https://github.com/Gabisonfire/ge-proton-manager/releases/latest/download/ge-proton-manager -O $HOME/.local/bin/ge-proton-manager
+chmod +x $HOME/.local/bin/ge-proton-manager
 ```
 
 ## Usage
@@ -38,7 +40,51 @@ Helps managing and updating [GE-Proton versions](https://github.com/GloriousEggr
   - Keeps X most recent unused versions.
 
 ## Examples
-### Interactive
+### Install latest version
+```
+$~: ge-proton-manager --latest
+23-12-01,15:28:02 | INFO |- Reading Steam libraries...
+23-12-01,15:28:02 | INFO |- Finding installed compatibility tools...
+23-12-01,15:28:02 | INFO |- Looking for versions currently in use
+23-12-01,15:28:02 | INFO |- Fecthing latest version...
+23-12-01,15:28:03 | INFO |- Downloading GE-Proton8-25...
+23-12-01,15:28:03 | INFO |- Saving to /tmp/tmp0hzhy9lz/ge-proton.tar.gz
+100%|███████████████████████████████████████████████████████████████████████████| 409M/409M [00:03<00:00, 115MB/s]
+23-12-01,15:28:07 | INFO |- Extracting /tmp/tmp0hzhy9lz/ge-proton.tar.gz to /home/gabisonfire/.steam/steam/compatibilitytools.d...
+100%|████████████████████████████████████████████████████████████████████████| 7947/7947 [00:05<00:00, 1532.31it/s]
+23-12-01,15:28:16 | INFO |- Done.
+```
+### Install specific version
+```
+$~: ge-proton-manager --version 7.3
+23-12-01,15:29:20 | INFO |- Reading Steam libraries...
+23-12-01,15:29:20 | INFO |- Finding installed compatibility tools...
+23-12-01,15:29:20 | INFO |- Looking for versions currently in use
+23-12-01,15:29:20 | INFO |- Downloading GE-Proton7-3...
+23-12-01,15:29:20 | INFO |- Saving to /tmp/tmpurt_xh3z/ge-proton.tar.gz
+100%|█████████████████████████████████████████████████████████████████████████| 408M/408M [00:03<00:00, 116MB/s]
+23-12-01,15:29:24 | INFO |- Extracting /tmp/tmpurt_xh3z/ge-proton.tar.gz to /home/gabisonfire/.steam/steam/compatibilitytools.d...
+100%|████████████████████████████████████████████████████████████████████████████████| 8927/8927 [00:05<00:00, 1745.93it/s]
+23-12-01,15:29:33 | INFO |- Done.
+```
+### Clean unused version
+```
+$~: ge-proton-manager --delete-unused --confirm-delete --debug
+23-12-01,15:31:28 | INFO |- Reading Steam libraries...
+23-12-01,15:31:28 | DEBUG |- Found /home/gabisonfire/.local/share/Steam
+23-12-01,15:31:28 | DEBUG |- Found /mnt/steam/SteamLibrary
+23-12-01,15:31:28 | INFO |- Finding installed compatibility tools...
+23-12-01,15:31:28 | INFO |- Looking for versions currently in use
+23-12-01,15:31:28 | DEBUG |- Used versions: ['GE-Proton7-38', 'GE-Proton7-41', 'GE-Proton7-49', 'GE-Proton8-16', 'GE-Proton8-6']
+23-12-01,15:31:28 | DEBUG |- Installed versions: ['GE-Proton7-3', 'GE-Proton7-38', 'GE-Proton7-41', 'GE-Proton7-49', 'GE-Proton8-16', 'GE-Proton8-25', 'GE-Proton8-6']
+23-12-01,15:31:28 | DEBUG |- Sanitized unused versions: ['GE-Proton7-3', 'GE-Proton8-25']
+23-12-01,15:31:28 | DEBUG |- Deletion confirmation skipped
+23-12-01,15:31:28 | INFO |- Deleting unused versions...
+23-12-01,15:31:28 | DEBUG |- Deleting GE-Proton7-3
+23-12-01,15:31:29 | DEBUG |- Deleting GE-Proton8-25
 ```
 
+### Automation on a cronjob, daily at 2 am
+```
+0 2 * * * /home/gabisonfire/.local/bin/ge-proton-manager --latest --delete-unused --confirm-delete --very-quiet
 ```

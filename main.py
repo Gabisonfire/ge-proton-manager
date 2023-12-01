@@ -27,7 +27,7 @@ args = parser.parse_args()
 logger = logging.getLogger("proton-ge-manager")
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(filename)s - %(message)s', datefmt='%y-%m-%d,%H:%M:%S')
+formatter = logging.Formatter('%(asctime)s | %(levelname)s |- %(message)s', datefmt='%y-%m-%d,%H:%M:%S')
 console.setFormatter(formatter)
 logger.addHandler(console)
 
