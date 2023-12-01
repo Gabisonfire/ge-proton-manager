@@ -84,7 +84,7 @@ $~: ge-proton-manager --delete-unused --confirm-delete --debug
 23-12-01,15:31:29 | DEBUG |- Deleting GE-Proton8-25
 ```
 
-### Automation on a cronjob, daily at 2 am
+### Automation on a cronjob, daily at 2 am. Download latest, clean unused except latest.
 ```
 0 2 * * * /home/gabisonfire/.local/bin/ge-proton-manager --latest --delete-unused --confirm-delete --very-quiet --keep 1
 ```
