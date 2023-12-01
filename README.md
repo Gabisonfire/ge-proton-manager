@@ -86,5 +86,5 @@ $~: ge-proton-manager --delete-unused --confirm-delete --debug
 
 ### Automation on a cronjob, daily at 2 am
 ```
-0 2 * * * /home/gabisonfire/.local/bin/ge-proton-manager --latest --delete-unused --confirm-delete --very-quiet
+0 2 * * * /home/gabisonfire/.local/bin/ge-proton-manager --latest --delete-unused --confirm-delete --very-quiet --keep 1
 ```
