@@ -35,7 +35,7 @@ chmod +x $HOME/.local/bin/ge-proton-manager
   - Download and install the latest version
 - --version"
   - Download and install a specific version
-    - Supported version string are: `GE-ProtonX-XX`, `ge-protonX-XX`, `X-XX` or `X.XX`
+    - Supported version strings are: `GE-ProtonX-XX`, `ge-protonX-XX`, `X-XX` or `X.XX`
 - --keep
   - Keeps X most recent unused versions.
 
