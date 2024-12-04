@@ -9,6 +9,7 @@ import re
 import argparse
 import logging
 import sys
+from tabulate import tabulate
 from tqdm.auto import tqdm
 
 parser = argparse.ArgumentParser()
@@ -16,10 +17,15 @@ parser.add_argument("--steam-install-path", help="Specify a custom install path.
 parser.add_argument("--debug", help="Sets loglevel to debug", action="store_true")
 parser.add_argument("--error", help="Sets loglevel to error only", action="store_true")
 parser.add_argument("--very-quiet", help="No output", action="store_true")
-parser.add_argument("--print-used-games", help="Prints GE-Proton used by games", action="store_true")
 parser.add_argument("--delete-unused", help="Deletes unused GE-Proton versions", action="store_true")
 parser.add_argument("--confirm-delete", help="Skips deletion prompt confirmation", action="store_false")
+parser.add_argument("--list", help="List currently used versions and by which game", action="store_true")
+parser.add_argument("--list-json", help="List currently used versions and by which game as json", action="store_true")
 parser.add_argument("--latest", help="Download and install the latest version", action="store_true")
+parser.add_argument("--update-games", help="Updates installed games to the latest GE version (requires --latest or --version)", action="store_true")
+parser.add_argument("--update-default", help="Updates the default proton version to latest GE version (requires --latest or --version)", action="store_true")
+parser.add_argument("--update-exclude", help="Exclude games from updates", nargs='+', default=[])
+parser.add_argument("--dry-run", help="Does not write to Steam's config file", action="store_true")
 parser.add_argument("--version", help="Download and install a specific version")
 parser.add_argument("--keep", help="Keep X most recent unused versions.", type=int)
 args = parser.parse_args()
@@ -45,6 +51,7 @@ if args.steam_install_path:
     steam_install_path = args.steam_install_path
 
 uses_stats = {}
+uses_stats_ids = {}
 steam_libraries = []
 installed_versions = []
 used_version = []
@@ -54,6 +61,7 @@ cleaned_used_version = []
 
 steamapps_path = f"{steam_install_path}/steamapps"
 compat_path = f"{steam_install_path}/compatibilitytools.d"
+config_path = f"{steam_install_path}/config/config.vdf"
 
 
 def prep_lists():
@@ -81,9 +89,10 @@ def prep_lists():
                     logger.debug(f"{x.strip()} is currently used by {y['AppState']['name']}")
                     if x.strip() in uses_stats:
                         uses_stats[x.strip()].append(y['AppState']['name'])
+                        uses_stats_ids[x.strip()].append((y['AppState']['name'],y['AppState']['appid']))
                     else:
                         uses_stats[x.strip()] = [y['AppState']['name']]
-                used_version.append(x.strip())
+                        uses_stats_ids[x.strip()] = [(y['AppState']['name'],y['AppState']['appid'])]
             except FileNotFoundError as e:
                 # These are expected, not logging them.
                 #logger.debug(e)
@@ -97,7 +106,7 @@ def clean_lists():
     global cleaned_used_version
     global cleaned_installed_version
     global unused_versions
-    used_version = list(dict.fromkeys(used_version))
+    used_version = list(dict.fromkeys(uses_stats))
     cleaned_used_version = [ x for x in used_version if "GE-Proton" in x ]
     cleaned_installed_version = [ x for x in installed_versions if "GE-Proton" in x ]
     cleaned_used_version.sort()
@@ -136,7 +145,7 @@ def install_version(version_string):
     logger.debug(f"Version string returned: {version_string}")
     if version_string in cleaned_installed_version:
         logger.warning(f"{version_string} is already installed.")
-        return
+        return version_string
     logger.info(f"Downloading {version_string}...")
     logger.debug(f"URL: https://github.com/GloriousEggroll/proton-ge-custom/releases/download/{version_string}/{version_string}.tar.gz")
     temp_dir = tempfile.TemporaryDirectory()
@@ -158,6 +167,7 @@ def install_version(version_string):
             tar.extract(member=member, path=compat_path)
     temp_dir.cleanup()
     logger.info("Done.")
+    return version_string
 
 def delete_unused(confirmation_required = True):
     if len(unused_versions) == 0:
@@ -181,19 +191,83 @@ def delete_unused(confirmation_required = True):
             logger.debug(f"Deleting {i}")
             shutil.rmtree(f"{compat_path}/{i}")
 
+def change_proton_version(games, version):
+    cfg = vdf.load(open(config_path))
+    default_version = cfg["InstallConfigStore"]["Software"]["Valve"]["Steam"]["CompatToolMapping"]["0"]["name"]
+    try:
+        for game in games:
+            logger.debug(f"Processing {game[0]}")
+            if game[2] == default_version:
+                logger.debug(f"{game[0]}({game[1]}) uses the default version ({default_version}), use --update-default to update.")
+                continue
+            if game[0] == "Default Proton Version":
+                game = ("Default Proton Version", "0", default_version)
+            logger.debug(f"Changing {game[0]}({game[1]}) from {game[2]} to {version}")
+            if game[1] not in cfg["InstallConfigStore"]["Software"]["Valve"]["Steam"]["CompatToolMapping"]:
+                logger.debug(f"{game[0]}({game[1]}) is likely set to the default version. This message won't appeat after the game is ran once. Skipping.")
+            else:
+                cfg["InstallConfigStore"]["Software"]["Valve"]["Steam"]["CompatToolMapping"][game[1]]["name"] = version
+        if not args.dry_run:
+            logger.debug("Writing config file...")
+            vdf.dump(cfg, open(config_path, "w"))
+        else:
+            logger.debug("DRYRUN! Config file not written.")
+        logger.debug("Game(s) updated.")
+    except Exception as e:
+        logger.error(str(e))
+
+def update_games():
+    ver = ""
+    games = []
+    filtered_games = []
+    if not args.latest or args.version:
+        logger.error("Requires either '--latest' or '--version' to be set")
+    if args.latest:
+        ver = install_version("latest")
+    if args.version:
+        ver = install_version(args.version)
+    if args.update_games:
+        for version in uses_stats_ids:
+            games += ([(i[0], i[1], version) for i in uses_stats_ids[version]])
+        for game in games:
+            if game[1] in args.update_exclude:
+                logger.debug(f"Excluding {game[0]}({game[1]}) due to exclude rule")
+                continue
+            filtered_games.append(game)
+    if args.update_default:
+        filtered_games.append(("Default Proton Version", "0", ""))
+    change_proton_version(filtered_games, ver)
+    exit(0)
+
 prep_lists()
 clean_lists()
 
 # Debug logging
 logger.debug(f"Used versions: {cleaned_used_version}")
 logger.debug(f"Installed versions: {cleaned_installed_version}")
-logger.debug(f"Sanitized unused versions: {unused_versions}")
+logger.debug(f"Unused versions: {unused_versions}")
 
-if args.print_used_games:
-    print(json.dumps(uses_stats, indent=2))
+def list_versions():
+    print()
+    print(tabulate(uses_stats, headers="keys"))
+    print()
+
+if args.list_json:
+    print(json.dumps(uses_stats_ids, indent=2))
+if args.update_games:
+    update_games()
+if args.update_default:
+    update_games()
 if args.latest:
     install_version("latest")
 if args.version:
     install_version(args.version)
 if args.delete_unused:
     delete_unused(args.confirm_delete)
+if args.list:
+    list_versions()
+
+
+# TODO
+# Update app manifest, otherwise --list is not accurate.
+# Post update command and vars
