@@ -30,9 +30,9 @@ chmod +x $HOME/.local/bin/ge-proton-manager
 - --list-json
   - Prints GE-Proton versions used by games in JSON format
 - --update-games 
-  - Updates installed games to the latest GE version (requires --latest or --version)
+  - Updates installed games to the latest (or provided version) GE version (requires --latest or --version)
 - --update-default
-  - Updates the default proton version to latest GE version (requires --latest or --version)
+  - Updates the default proton version to latest (or provided version) GE version (requires --latest or --version)
 - --update-exclude
   - Exclude games from updates by game ID.
 - --update-exclude-regex
