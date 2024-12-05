@@ -9,6 +9,8 @@ Helps managing and updating [GE-Proton versions](https://github.com/GloriousEggr
 - List which games uses which version
 - Can be run in a cron to set & forget
 - Automatically detects steam libraries
+- Update games used version automatically
+- Update Steam's default proton version
 
 ## Installation
 ```
