@@ -25,8 +25,24 @@ chmod +x $HOME/.local/bin/ge-proton-manager
   - Sets loglevel to error only
 - --very-quiet
   - Silences all output
-- --print-used-games
+- --list
+  - List currently used versions and by which game
+- --list-json
   - Prints GE-Proton versions used by games in JSON format
+- --update-games 
+  - Updates installed games to the latest GE version (requires --latest or --version)
+- --update-default
+  - Updates the default proton version to latest GE version (requires --latest or --version)
+- --update-exclude
+  - Exclude games from updates by game ID.
+- --update-exclude-regex
+  - Exclude games from updates matching the provided regex expression
+- --dry-run
+  - Does not write to Steam's config file
+- --script
+  - Executes the provided script after successful update, sending installed version as parameter.
+- --test-script
+  - Tests the script execution
 - --delete-unused
   - Deletes unused GE-Proton versions
 - --confirm-delete

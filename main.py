@@ -1,3 +1,4 @@
+from genericpath import isdir
 import requests
 import os
 import vdf
@@ -9,6 +10,7 @@ import re
 import argparse
 import logging
 import sys
+import subprocess
 from tabulate import tabulate
 from tqdm.auto import tqdm
 
@@ -25,7 +27,10 @@ parser.add_argument("--latest", help="Download and install the latest version", 
 parser.add_argument("--update-games", help="Updates installed games to the latest GE version (requires --latest or --version)", action="store_true")
 parser.add_argument("--update-default", help="Updates the default proton version to latest GE version (requires --latest or --version)", action="store_true")
 parser.add_argument("--update-exclude", help="Exclude games from updates", nargs='+', default=[])
+parser.add_argument("--update-exclude-regex", help="Exclude games from updates using regex expression")
 parser.add_argument("--dry-run", help="Does not write to Steam's config file", action="store_true")
+parser.add_argument("--script", help="Executes the provided script after successful update, sending version as parameter.")
+parser.add_argument("--test-script", help="Tests the script execution", action="store_true")
 parser.add_argument("--version", help="Download and install a specific version")
 parser.add_argument("--keep", help="Keep X most recent unused versions.", type=int)
 args = parser.parse_args()
@@ -167,6 +172,12 @@ def install_version(version_string):
             tar.extract(member=member, path=compat_path)
     temp_dir.cleanup()
     logger.info("Done.")
+    if args.script is not None:
+        logger.debug(f"Executing post update script {args.script}")
+        try:
+            subprocess.call([args.script, version_string])
+        except Exception as e:
+            logger.error(str(e))
     return version_string
 
 def delete_unused(confirmation_required = True):
@@ -207,6 +218,14 @@ def change_proton_version(games, version):
                 logger.debug(f"{game[0]}({game[1]}) is likely set to the default version. This message won't appeat after the game is ran once. Skipping.")
             else:
                 cfg["InstallConfigStore"]["Software"]["Valve"]["Steam"]["CompatToolMapping"][game[1]]["name"] = version
+            if not args.dry_run:
+                logger.debug(f"Writing version file for {game[0]}")
+                for library in steam_libraries:
+                    vfile = f"{library}/steamapps/compatdata/{game[1]}/version"
+                    if os.path.isfile(vfile):
+                        logger.debug(f"Writing {vfile} with version {version}")
+                        with open(vfile, 'w') as f:
+                            f.write(version)
         if not args.dry_run:
             logger.debug("Writing config file...")
             vdf.dump(cfg, open(config_path, "w"))
@@ -222,6 +241,7 @@ def update_games():
     filtered_games = []
     if not args.latest or args.version:
         logger.error("Requires either '--latest' or '--version' to be set")
+        sys.exit(1)
     if args.latest:
         ver = install_version("latest")
     if args.version:
@@ -230,14 +250,13 @@ def update_games():
         for version in uses_stats_ids:
             games += ([(i[0], i[1], version) for i in uses_stats_ids[version]])
         for game in games:
-            if game[1] in args.update_exclude:
+            if game[1] in args.update_exclude or re.search(args.update_exclude_regex, game[0]):
                 logger.debug(f"Excluding {game[0]}({game[1]}) due to exclude rule")
                 continue
             filtered_games.append(game)
     if args.update_default:
         filtered_games.append(("Default Proton Version", "0", ""))
     change_proton_version(filtered_games, ver)
-    exit(0)
 
 prep_lists()
 clean_lists()
@@ -252,22 +271,21 @@ def list_versions():
     print(tabulate(uses_stats, headers="keys"))
     print()
 
+if args.update_exclude_regex is None:
+    args.update_exclude_regex = "^$"
+if args.test_script:
+    subprocess.call([args.script, "GE-Proton13-37"])
 if args.list_json:
     print(json.dumps(uses_stats_ids, indent=2))
 if args.update_games:
     update_games()
 if args.update_default:
     update_games()
-if args.latest:
+if args.latest and not args.update_games and not args.update_default:
     install_version("latest")
-if args.version:
+if args.version and not args.update_games and not args.update_default:
     install_version(args.version)
 if args.delete_unused:
     delete_unused(args.confirm_delete)
 if args.list:
     list_versions()
-
-
-# TODO
-# Update app manifest, otherwise --list is not accurate.
-# Post update command and vars
