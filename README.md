@@ -58,6 +58,44 @@ chmod +x $HOME/.local/bin/ge-proton-manager
   - Keeps X most recent unused versions.
 
 ## Examples
+
+### Update games and default version
+```
+$~: ge-proton-manager --latest --delete-unused --confirm-delete --keep 1 --update-default --update-exclude-regex "Overwatch" --update-games --debug
+24-12-04,19:35:22 | INFO |- Reading Steam libraries...
+24-12-04,19:35:22 | DEBUG |- Found /home/gabisonfire/.local/share/Steam
+24-12-04,19:35:22 | DEBUG |- Found /mnt/steam/SteamLibrary
+24-12-04,19:35:22 | INFO |- Finding installed compatibility tools...
+24-12-04,19:35:22 | DEBUG |- Found GE-Proton9-11 in /home/gabisonfire/.steam/steam/compatibilitytools.d/GE-Proton9-11
+24-12-04,19:35:22 | DEBUG |- Found GE-Proton9-20 in /home/gabisonfire/.steam/steam/compatibilitytools.d/GE-Proton9-20
+24-12-04,19:35:22 | DEBUG |- Found GE-Proton9-9 in /home/gabisonfire/.steam/steam/compatibilitytools.d/GE-Proton9-9
+24-12-04,19:35:22 | INFO |- Looking for versions currently in use
+24-12-04,19:35:22 | DEBUG |- GE-Proton9-20 is currently used by Eastside Hockey Manager
+24-12-04,19:35:22 | DEBUG |- GE-Proton9-20 is currently used by Gunfire Reborn
+24-12-04,19:35:22 | DEBUG |- GE-Proton9-20 is currently used by Spyro™ Reignited Trilogy
+24-12-04,19:35:22 | DEBUG |- GE-Proton9-20 is currently used by Tape to Tape
+24-12-04,19:35:22 | DEBUG |- Current unused versions: ['GE-Proton7-11', 'GE-Proton9-9']
+24-12-04,19:35:22 | DEBUG |- Keeping newest 1 versions
+24-12-04,19:35:22 | DEBUG |- Used versions: ['GE-Proton9-11', 'GE-Proton9-20']
+24-12-04,19:35:22 | DEBUG |- Installed versions: ['GE-Proton7-11', 'GE-Proton9-11', 'GE-Proton9-20', 'GE-Proton9-9']
+24-12-04,19:35:22 | DEBUG |- Unused versions: ['GE-Proton7-11']
+24-12-04,19:35:22 | INFO |- Fecthing latest version...
+24-12-04,19:35:22 | DEBUG |- Version string received: GE-Proton9-20
+24-12-04,19:35:22 | WARNING |- GE-Proton9-20 is already installed.
+24-12-04,19:35:22 | DEBUG |- Excluding Overwatch® 2(2357570) due to exclude rule
+24-12-04,19:35:22 | DEBUG |- Processing Eastside Hockey Manager
+24-12-04,19:35:22 | DEBUG |- Changing Eastside Hockey Manager(301120) from GE-Proton9-11 to GE-Proton9-20
+24-12-04,19:35:22 | DEBUG |- Writing /home/gabisonfire/.local/share/Steam/steamapps/compatdata/301120/version with version GE-Proton9-20
+24-12-04,19:35:22 | DEBUG |- Processing Default Proton Version
+24-12-04,19:35:22 | DEBUG |- Changing Default Proton Version(0) from GE-Proton9-11 to GE-Proton9-20
+24-12-04,19:35:22 | DEBUG |- Writing version file for Default Proton Version
+24-12-04,19:35:22 | DEBUG |- Writing /home/gabisonfire/.local/share/Steam/steamapps/compatdata/0/version with version GE-Proton9-20
+24-12-04,19:35:22 | DEBUG |- Writing config file...
+24-12-04,19:35:22 | DEBUG |- Game(s) updated.
+24-12-04,19:35:22 | DEBUG |- Deletion confirmation skipped
+24-12-04,19:35:22 | INFO |- Deleting unused versions...
+24-12-04,19:35:22 | DEBUG |- Deleting GE-Proton7-11
+```
 ### Install latest version
 ```
 $~: ge-proton-manager --latest
