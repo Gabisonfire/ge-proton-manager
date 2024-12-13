@@ -45,6 +45,8 @@ chmod +x $HOME/.local/bin/ge-proton-manager
   - Executes the provided script after successful update, sending installed version as parameter.
 - --test-script
   - Tests the script execution
+- --restart-steam
+  - Restarts Steam after successful update
 - --delete-unused
   - Deletes unused GE-Proton versions
 - --confirm-delete

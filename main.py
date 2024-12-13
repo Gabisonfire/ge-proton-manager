@@ -1,4 +1,6 @@
-from genericpath import isdir
+from time import sleep
+import subprocess
+import signal
 import requests
 import os
 import vdf
@@ -31,6 +33,7 @@ parser.add_argument("--update-exclude-regex", help="Exclude games from updates u
 parser.add_argument("--dry-run", help="Does not write to Steam's config file", action="store_true")
 parser.add_argument("--script", help="Executes the provided script after successful update, sending version as parameter.")
 parser.add_argument("--test-script", help="Tests the script execution", action="store_true")
+parser.add_argument("--restart-steam", help="Restarts Steam after update", action="store_true")
 parser.add_argument("--version", help="Download and install a specific version")
 parser.add_argument("--keep", help="Keep X most recent unused versions.", type=int)
 args = parser.parse_args()
@@ -63,6 +66,7 @@ used_version = []
 unused_versions = []
 cleaned_installed_version = []
 cleaned_used_version = []
+proton_version = None
 
 steamapps_path = f"{steam_install_path}/steamapps"
 compat_path = f"{steam_install_path}/compatibilitytools.d"
@@ -236,16 +240,16 @@ def change_proton_version(games, version):
         logger.error(str(e))
 
 def update_games():
-    ver = ""
     games = []
     filtered_games = []
+    global proton_version
     if not args.latest or args.version:
         logger.error("Requires either '--latest' or '--version' to be set")
         sys.exit(1)
-    if args.latest:
-        ver = install_version("latest")
-    if args.version:
-        ver = install_version(args.version)
+    if args.latest and proton_version is None:
+        proton_version = install_version("latest")
+    if args.version and proton_version is None:
+        proton_version = install_version(args.version)
     if args.update_games:
         for version in uses_stats_ids:
             games += ([(i[0], i[1], version) for i in uses_stats_ids[version]])
@@ -256,7 +260,39 @@ def update_games():
             filtered_games.append(game)
     if args.update_default:
         filtered_games.append(("Default Proton Version", "0", ""))
-    change_proton_version(filtered_games, ver)
+    change_proton_version(filtered_games, proton_version)
+
+def get_pid(name):
+    try:
+        i = subprocess.check_output(["pidof",name])
+    except subprocess.CalledProcessError:
+        return None
+    return int(i)
+
+def restart_steam():
+    try:
+        if get_pid("steam") is None:
+            logger.debug("Steam doest not appear to be running.")
+            return
+        p = get_pid("steam")
+        logger.info("Restarting Steam")
+        logger.debug("Closing Steam")
+        os.kill(p, signal.SIGTERM)
+        logger.debug("Waiting...")
+        tryn = 0
+        while get_pid("steam") is not None or tryn < 11:
+            logger.debug("Steam is still running, waiting...")
+            sleep(2)
+            tryn += 1
+        if tryn >= 10 and get_pid("steam") is not None:
+            logger.error("Closing Steam failed, aborting restart.")
+            return
+        logger.debug("Starting Steam")
+        subprocess.Popen("steam", start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL )
+    except Exception as e:
+        logger.error("Failed to restart Steam")
+        logger.debug(str(e))
+
 
 prep_lists()
 clean_lists()
@@ -270,6 +306,11 @@ def list_versions():
     print()
     print(tabulate(uses_stats, headers="keys"))
     print()
+
+
+
+restart_steam()
+exit
 
 if args.update_exclude_regex is None:
     args.update_exclude_regex = "^$"
@@ -289,3 +330,5 @@ if args.delete_unused:
     delete_unused(args.confirm_delete)
 if args.list:
     list_versions()
+if args.restart_steam and proton_version is not None:
+    restart_steam()
