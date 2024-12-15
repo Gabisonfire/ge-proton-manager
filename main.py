@@ -151,10 +151,10 @@ def install_version(version_string):
         version_string = json.loads(r.content.decode())["tag_name"]
     logger.debug(f"Version string received: {version_string}")
     version_string = sanitize_version(version_string)
-    logger.debug(f"Version string returned: {version_string}")
+    logger.debug(f"Sanitized version string returned: {version_string}")
     if version_string in cleaned_installed_version:
         logger.warning(f"{version_string} is already installed.")
-        return version_string
+        return None
     logger.info(f"Downloading {version_string}...")
     logger.debug(f"URL: https://github.com/GloriousEggroll/proton-ge-custom/releases/download/{version_string}/{version_string}.tar.gz")
     temp_dir = tempfile.TemporaryDirectory()
@@ -165,7 +165,7 @@ def install_version(version_string):
         total_length = int(r.headers.get("Content-Length"))
         if r.status_code != 200:
             logger.error(f"Version '{version_string}' cannot be found ({r.status_code})")
-            return
+            return None
         with tqdm.wrapattr(r.raw, "read", total=total_length, desc="")as raw:
             with open(temp_file_path, 'wb') as output:
                 shutil.copyfileobj(raw, output)
@@ -306,11 +306,6 @@ def list_versions():
     print()
     print(tabulate(uses_stats, headers="keys"))
     print()
-
-
-
-restart_steam()
-exit
 
 if args.update_exclude_regex is None:
     args.update_exclude_regex = "^$"
